@@ -15,7 +15,7 @@ async def handle_photo(update, context):
 
     if h in hashes:
         await update.message.reply_text(
-            "Bu rasm oldin yuborilgan"
+            "Bu rasm oldin yuborilgan, iltimos hiyla qilmang!"
         )
     else:
         hashes.add(h)
