@@ -1,27 +1,34 @@
-from telegram.ext import Application, MessageHandler, filters
+import sqlite3
 import imagehash
 from PIL import Image
-import io
+from telegram import Update
+from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 
-hashes = set()
+# baza ochamiz
+conn = sqlite3.connect("hashes.db")
+cursor = conn.cursor()
+cursor.execute("CREATE TABLE IF NOT EXISTS hashes (hash TEXT)")
+conn.commit()
 
-async def handle_photo(update, context):
-    photo = update.message.photo[-1]
-    file = await photo.get_file()
-    data = await file.download_as_bytearray()
+TOKEN = "8656669768:AAGEtCyW-qL5qanXwb2X4iGEGcl3uotBJSg"
 
-    img = Image.open(io.BytesIO(data))
-    h = str(imagehash.phash(img))
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    file = await update.message.photo[-1].get_file()
+    await file.download_to_drive("temp.jpg")
 
-    if h in hashes:
-        await update.message.reply_text(
-            "Bu rasm oldin yuborilgan, iltimos hiyla qilmang!"
-        )
+    img = Image.open("temp.jpg")
+    img_hash = str(imagehash.phash(img))
+
+    cursor.execute("SELECT hash FROM hashes WHERE hash=?", (img_hash,))
+    result = cursor.fetchone()
+
+    if result:
+        await update.message.reply_text("⚠️ Bu rasm ilgari yuborilgan, iltimos hiyla qilmang!")
     else:
-        hashes.add(h)
+        cursor.execute("INSERT INTO hashes (hash) VALUES (?)", (img_hash,))
+        conn.commit()
 
-app = Application.builder().token("8656669768:AAGEtCyW-qL5qanXwb2X4iGEGcl3uotBJSg").build()
-
+app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
 app.run_polling()
