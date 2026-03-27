@@ -23,10 +23,18 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     result = cursor.fetchone()
 
     if result:
-        await update.message.reply_text("⚠️ Bu rasm ilgari yuborilgan, iltimos hiyla qilmang!")
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="⚠️ Bu rasm ilgari yuborilgan, iltimos hiyla qilmang!"
+        )
     else:
         cursor.execute("INSERT INTO hashes (hash) VALUES (?)", (img_hash,))
         conn.commit()
+
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="✅ Yangi rasm saqlandi"
+        )
 
 app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
